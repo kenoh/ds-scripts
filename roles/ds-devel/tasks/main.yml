@@ -77,7 +77,10 @@
     value: "fork"
 - name: Fetch all
   command:
-    argv: git fetch --all
+    argv:
+      - git
+      - fetch
+      - --all
     chdir: "{{ ds_repo }}"
 
 # DS devel scripts
