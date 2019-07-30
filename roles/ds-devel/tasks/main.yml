@@ -1,0 +1,123 @@
+---
+- name: Install devel packages
+  command:
+    argv:
+      - yum
+      - install
+      - "-y"
+      - "--allowerasing"
+      - "--best"
+      - "@buildsys-build"
+      - autoconf
+      - automake
+      - gdb
+      - git
+      - ipython3
+      - make
+      - npm
+      - rsync
+      - screen
+      - strace
+      - the_silver_searcher
+      - tig
+      - tmux
+      - vim
+      - wget
+  become: yes
+- name: Install PIP packages
+  pip:
+    executable: pip-3
+    name: 
+      - pdbpp
+      - pytest-pylint
+  become: yes
+
+# Repo
+- name: Set-fact ds_repo
+  set_fact:
+    ds_repo: "{{ ansible_user_dir }}/ds"
+- name: Clone upstream repo
+  git:
+    repo: ssh://git@pagure.io/389-ds-base.git
+    dest: "{{ ds_repo }}"
+    remote: up
+    accept_hostkey: yes
+- name: Do not allow pushing upstream
+  git_config:
+    scope: local
+    repo: "{{ ds_repo }}"
+    name: "remote.up.push"
+    value: "NO_PUSH_MAN"
+- name: Add PRs refspec
+  command:
+    argv:
+      - git
+      - config
+      - "--replace-all"
+      - "remote.up.fetch"
+      - "+refs/pull/*/head:refs/remotes/up/+*"
+      - "refs/pull"
+    chdir: "{{ ds_repo }}"
+- name: Try to add the remote
+  command:
+    argv:
+      - git
+      - remote
+      - add
+      - fork
+      - "ssh://git@pagure.io/forks/mhonek/389-ds-base.git"
+    chdir: "{{ ds_repo }}"
+  register: res
+  failed_when: res.rc != 0 and "already exists" not in res.stderr
+- name: Set pushdefault
+  git_config:
+    scope: local
+    repo: "{{ ds_repo }}"
+    name: "remote.pushdefault"
+    value: "fork"
+- name: Fetch all
+  command:
+    argv: git fetch --all
+    chdir: "{{ ds_repo }}"
+
+# DS devel scripts
+- name: Set-fact ds_scripts_repo
+  set_fact:
+    ds_scripts_repo: "{{ ansible_user_dir }}/ds-scripts"
+- name: Clone DS scripts repo
+  git:
+    repo: git@github.com:kenoh/ds-scripts.git
+    dest: "{{ ds_scripts_repo }}"
+    accept_hostkey: yes
+
+# Shell
+- name: Set vagrant user shell
+  user:
+    name: vagrant
+    shell: /usr/bin/zsh
+  become: yes
+- name: Set root password
+  user:
+    name: root
+    # this is 'x'
+    password: "$6$mUbcguAV8qDAcict$db3qYfTOBLMB2litNy.tq9BrEoBwNaXpe1mTrf4fbyaoHuQx.K31W/5SBslduBfv4eUGlXrOYJN4tBWF3G6mM0"
+  become: yes
+- name: Add scripts to PATH
+  template:
+    src: profile.sh
+    dest: /etc/profile.d/ds-devel.sh
+    mode: 0444
+  become: yes
+
+# Cockpit
+- name: Install cockpit
+  package:
+    name: cockpit
+    state: present
+  become: yes
+- name: Enable Cockpit
+  service:
+    name: cockpit
+    enabled: yes
+    state: started
+  become: yes
