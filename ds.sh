@@ -47,6 +47,12 @@ debug-spec () {
 	sed -i '/^autoreconf/i export CFLAGS="$CFLAGS -O0"' "$SPEC"
 }
 
+test () {
+	local maybe_path="$(git rev-parse --show-toplevel)"
+	[ $? -eq 0 ] && cd "$maybe_path"
+	cd dirsrvtests/tests/
+	sudo PYTHONDONTWRITEBYTECODE=1 "DEBUGGING=$DEBUGGING" pytest-3 "${@}"
+}
 
 if [ 'function' = `LC_ALL=C type -t "$1"` ]; then
 	CMD="$1"
