@@ -30,6 +30,7 @@
     name: 
       - pdbpp
       - pytest-pylint
+      - click
   become: yes
 
 # Repo

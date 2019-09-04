@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+import click
+import subprocess as sp
+import sys
+import os
+
+
+@click.group()
+def cli():
+    pass
+
+
+def call(cmd, *args, **kwargs):
+    return sp.check_call(cmd, stdout=sys.stdout, stderr=sys.stderr, *args, **kwargs)
+
+
+def call_at_base(cmd, *args, **kwargs):
+    return call(cmd, cwd=get_repo_base(), *args, **kwargs)
+
+
+def bash(cmd, *args, **kwargs):
+    return call(['bash', '-c', cmd], *args, **kwargs)
+
+
+def bash_at_base(cmd, *args, **kwargs):
+    return bash(cmd, cwd=get_repo_base(), *args, **kwargs)
+
+
+def get_repo_base():
+    return sp.check_output(['git', 'rev-parse', '--show-toplevel']).decode().strip()
+
+
+@cli.command('builddeps')
+def cli_builddeps():
+    cmd = r"""
+	grep -E "^(Build)?Requires" rpm/389-ds-base.spec.in \
+		  | grep -v -E '(name|MODULE)' \
+		  | awk '{ print $2 }' \
+		  | sed 's/%{python3_pkgversion}/3/g' \
+		  | grep -v "^/" \
+		  | grep -v pkgversion \
+		  | sort | uniq \
+		  | tr '\n' ' ' \
+		| xargs sudo dnf -y install --setopt=strict=False
+"""
+    return bash_at_base(cmd)
+
+
+@cli.command('srpms')
+def cli_srpms():
+    return srpms()
+
+
+def srpms():
+    bash_at_base('make -f rpm.mk clean')
+    bash_at_base('make -f rpm.mk srpms')
+
+
+@cli.command('rpms')
+def cli_rpms():
+    srpms()
+
+    timestamp = sp.check_output(['date', '--utc', '+%Y%m%d_%H%M%SZ']).decode().strip()
+    bash_at_base(f'mv ~/rpmbuild/RPMS{{,~{timestamp}}} || true')
+    bash_at_base('rpmbuild --nocheck --rebuild dist/srpms/*')
+
+    reinstall_from(os.path.expanduser('~/rpmbuild/RPMS'))
+
+
+@cli.command('reinstall-from')
+@click.argument('directory', default=os.path.expanduser('~/rpmbuild/RPMS'))
+def cli_reinstall_from(directory):
+    return reinstall_from(directory)
+
+
+def reinstall_from(directory):
+    call(['sudo', 'dnf', '-y', 'remove', '389-ds-base*', 'python3-lib389', 'python3-389-ds-base-tests'], cwd=directory)
+    bash('sudo dnf -y install */*.rpm', cwd=directory)
+
+
+@cli.command('test')
+@click.option('-d', '--debugging', is_flag=True, default=False)
+@click.argument('args', nargs=-1)
+def cli_test(args, debugging):
+    return call(['sudo',
+                 'PYTHONDONTWRITEBYTECODE=1',
+                 *(['DEBUGGING=1'] if debugging else []),
+                 'pytest-3', *args],
+                cwd=os.path.join(get_repo_base(), 'dirsrvtests/tests'))
+
+
+
+@cli.command('debug-spec')
+def cli_debug_spec():
+    spec = 'rpm/389-ds-base.spec.in'
+    call_at_base(['sed', '-i', '/^autoreconf/i export CFLAGS="$CFLAGS -O0"', spec])
+
+
+if __name__ == '__main__':
+    cli()
