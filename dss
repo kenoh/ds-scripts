@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import click
+import shlex
 import subprocess as sp
 import sys
 import os
@@ -11,6 +12,9 @@ def cli():
 
 
 def call(cmd, *args, **kwargs):
+    print(79*'#')
+    print(f'# Calling: {" ".join(map(shlex.quote, cmd))}')
+    print(79*'#')
     return sp.check_call(cmd, stdout=sys.stdout, stderr=sys.stderr, *args, **kwargs)
 
 
@@ -86,7 +90,8 @@ def cli_test(args, debugging):
                  'PYTHONDONTWRITEBYTECODE=1',
                  *(['DEBUGGING=1'] if debugging else []),
                  'pytest-3', *args],
-                cwd=os.path.join(get_repo_base(), 'dirsrvtests/tests'))
+                cwd=os.getcwd())
+                #cwd=os.path.join(get_repo_base(), 'dirsrvtests/tests'))
 
 
 
