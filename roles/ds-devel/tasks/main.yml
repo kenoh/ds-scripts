@@ -43,6 +43,7 @@
     dest: "{{ ds_repo }}"
     remote: up
     accept_hostkey: yes
+    update: no
 - name: Do not allow pushing upstream
   git_config:
     scope: local
