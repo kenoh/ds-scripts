@@ -84,6 +84,17 @@
       - fetch
       - --all
     chdir: "{{ ds_repo }}"
+# Git commit message template
+- name: Copy commit message template
+  template:
+    src: commit_template
+    dest: "{{ ansible_user_dir }}/.git_commit_template-389-ds-base"
+- name: Add the commit message template to the git config
+  git_config:
+    scope: local
+    repo: "{{ ds_repo }}"
+    name: "commit.template"
+    value: "~/.git_commit_template-389-ds-base"
 
 # DS devel scripts
 - name: Set-fact ds_scripts_repo

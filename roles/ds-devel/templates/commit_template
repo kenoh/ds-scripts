@@ -1,0 +1,19 @@
+#Issue ##### - <SUMMARY>
+
+Bug Description:
+# <DESC>
+
+Fix Description:
+# <DESC>
+
+#Fixes <An Issue URL>
+#Relates <An Issue URL>
+Fixes 
+
+Author: {{ real_name }} <{{ email_address }}>
+
+Review by: ???
+
+#
+# To use this template by default add it using `git config commit.template ....`.
+#
