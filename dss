@@ -51,18 +51,22 @@ def cli_builddeps():
 
 
 @cli.command('srpms')
-def cli_srpms():
-    return srpms()
+@click.option('-r', '--rust', is_flag=True, default=False, help='Pre-download Rust dependencies')
+def cli_srpms(rust):
+    return srpms(rust)
 
 
-def srpms():
+def srpms(rust):
     bash_at_base('make -f rpm.mk clean')
+    if rust:
+        bash_at_base('make -f rpm.mk download-cargo-dependencies')
     bash_at_base('make -f rpm.mk srpms')
 
 
 @cli.command('rpms')
-def cli_rpms():
-    srpms()
+@click.option('-r', '--rust', is_flag=True, default=False, help='Pre-download Rust dependencies')
+def cli_rpms(rust):
+    srpms(rust)
 
     timestamp = sp.check_output(['date', '--utc', '+%Y%m%d_%H%M%SZ']).decode().strip()
     bash_at_base(f'mv ~/rpmbuild/RPMS{{,~{timestamp}}} || true')
