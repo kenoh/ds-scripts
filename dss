@@ -14,6 +14,10 @@ def cli():
 def call(cmd, *args, **kwargs):
     print(79*'#')
     print(f'# Calling: {" ".join(map(shlex.quote, cmd))}')
+    try:
+        print(f'#      at: {kwargs["cwd"]}')
+    except IndexError:
+        print(f'#      at: {os.getcwd()}')
     print(79*'#')
     return sp.check_call(cmd, stdout=sys.stdout, stderr=sys.stderr, *args, **kwargs)
 
