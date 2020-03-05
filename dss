@@ -92,14 +92,19 @@ def reinstall_from(directory):
 
 @cli.command('test')
 @click.option('-d', '--debugging', is_flag=True, default=False)
+@click.option('-g', '--global-lib389', is_flag=True, default=False)
 @click.argument('args', nargs=-1)
-def cli_test(args, debugging):
-    return call(['sudo',
-                 'PYTHONDONTWRITEBYTECODE=1',
-                 *(['DEBUGGING=1'] if debugging else []),
-                 'pytest-3', *args],
-                cwd=os.getcwd())
-                #cwd=os.path.join(get_repo_base(), 'dirsrvtests/tests'))
+def cli_test(args, debugging, global_lib389):
+    return call(['sudo'
+                ,'PYTHONDONTWRITEBYTECODE=1'
+                ,*([f'PYTHONPATH={get_repo_base()}/src/lib389'] if not global_lib389 else [])
+                ,*(['DEBUGGING=1'] if debugging else [])
+                ,'pytest-3'
+                , *args
+                ]
+               ,cwd=os.getcwd()
+               #,cwd=os.path.join(get_repo_base(), 'dirsrvtests/tests')
+               )
 
 
 
