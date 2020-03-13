@@ -69,12 +69,13 @@ def srpms(rust):
 
 @cli.command('rpms')
 @click.option('-r', '--rust', is_flag=True, default=False, help='Pre-download Rust dependencies')
-def cli_rpms(rust):
+@click.option('-u', '--ugly', is_flag=True, default=False, help='Be ugly, i.e. do not build with `nice 19`')
+def cli_rpms(rust, ugly):
     srpms(rust)
 
     timestamp = sp.check_output(['date', '--utc', '+%Y%m%d_%H%M%SZ']).decode().strip()
     bash_at_base(f'mv ~/rpmbuild/RPMS{{,~{timestamp}}} || true')
-    bash_at_base('rpmbuild --nocheck --rebuild dist/srpms/*')
+    bash_at_base(('' if ugly else 'nice -n 19 ') + 'rpmbuild --nocheck --rebuild dist/srpms/*')
 
     reinstall_from(os.path.expanduser('~/rpmbuild/RPMS'))
 
