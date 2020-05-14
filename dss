@@ -1,6 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 import click
 import shlex
+import shutil
 import subprocess as sp
 import sys
 import os
@@ -100,7 +101,7 @@ def cli_test(args, debugging, global_lib389):
                 ,'PYTHONDONTWRITEBYTECODE=1'
                 ,*([f'PYTHONPATH={get_repo_base()}/src/lib389'] if not global_lib389 else [])
                 ,*(['DEBUGGING=1'] if debugging else [])
-                ,'pytest-3'
+                ,*[(shutil.which('pytest') or 'pytest-3')]
                 , *args
                 ]
                ,cwd=os.getcwd()
