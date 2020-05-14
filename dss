@@ -57,22 +57,24 @@ def cli_builddeps():
 
 @cli.command('srpms')
 @click.option('-r', '--rust', is_flag=True, default=False, help='Pre-download Rust dependencies')
-def cli_srpms(rust):
-    return srpms(rust)
+@click.option('-a', '--skip-audit', is_flag=True, default=False, help='Skip NPM audit')
+def cli_srpms(rust, skip_audit):
+    return srpms(rust, skip_audit)
 
 
-def srpms(rust):
+def srpms(rust, skip_audit):
     bash_at_base('make -f rpm.mk clean')
     if rust:
         bash_at_base('make -f rpm.mk download-cargo-dependencies')
-    bash_at_base('make -f rpm.mk srpms')
+    bash_at_base(f'{"SKIP_AUDIT_CI=1 " if skip_audit else ""}make -f rpm.mk srpms')
 
 
 @cli.command('rpms')
 @click.option('-r', '--rust', is_flag=True, default=False, help='Pre-download Rust dependencies')
 @click.option('-u', '--ugly', is_flag=True, default=False, help='Be ugly, i.e. do not build with `nice 19`')
-def cli_rpms(rust, ugly):
-    srpms(rust)
+@click.option('-a', '--skip-audit', is_flag=True, default=False, help='Skip NPM audit')
+def cli_rpms(rust, ugly, skip_audit):
+    srpms(rust, skip_audit)
 
     timestamp = sp.check_output(['date', '--utc', '+%Y%m%d_%H%M%SZ']).decode().strip()
     bash_at_base(f'mv ~/rpmbuild/RPMS{{,~{timestamp}}} || true')
